@@ -1,0 +1,41 @@
+<view class="container">
+  <view class="profile">
+    <image class="avatar" src="{{userInfo.avatar}}" wx:if="{{userInfo.avatar}}"></image>
+    <view class="avatar avatar-placeholder" wx:else>👤</view>
+    <view class="profile-info">
+      <view class="nickname">{{userInfo.nickname || '未登录'}}</view>
+      <view class="bind">
+        <text class="tag" wx:if="{{userInfo.bind_wechat}}">微信已授权</text>
+        <text class="tag" wx:if="{{userInfo.bind_alipay}}">支付宝已绑定</text>
+      </view>
+      <view class="login-actions" wx:if="{{!userInfo}}">
+        <view class="mini-btn" bindtap="onWechatLogin">微信登录</view>
+        <view class="mini-btn" bindtap="onAlipayLogin">支付宝登录</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card quick">
+    <view class="quick-item" data-status="" bindtap="goOrders">
+      <view class="quick-num">{{orderCount}}</view>
+      <view class="quick-label">全部订单</view>
+    </view>
+    <view class="quick-item" data-status="0" bindtap="goOrders">
+      <view class="quick-num">›</view>
+      <view class="quick-label">待支付</view>
+    </view>
+    <view class="quick-item" data-status="1" bindtap="goOrders">
+      <view class="quick-num">›</view>
+      <view class="quick-label">已支付</view>
+    </view>
+    <view class="quick-item" data-status="2" bindtap="goOrders">
+      <view class="quick-num">›</view>
+      <view class="quick-label">已完成</view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="menu-row" bindtap="goOrders">我的订单 <text class="arrow">›</text></view>
+    <view class="menu-row" wx:if="{{userInfo}}" bindtap="onLogout">退出登录 <text class="arrow">›</text></view>
+  </view>
+</view>

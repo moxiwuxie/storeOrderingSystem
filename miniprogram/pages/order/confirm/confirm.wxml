@@ -1,0 +1,37 @@
+<view class="container">
+  <view class="card">
+    <view class="card-title">订单商品</view>
+    <view class="row" wx:for="{{cart.items}}" wx:key="id">
+      <view class="row-name">
+        {{item.name}}
+        <text class="row-spec" wx:if="{{item.spec_name}}">（{{item.spec_name}}）</text>
+      </view>
+      <view class="row-qty">x{{item.quantity}}</view>
+      <view class="row-price">¥{{item.subtotal}}</view>
+    </view>
+    <view class="total-row">
+      <text>合计</text>
+      <text class="price">{{cart.total_amount}}</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="input-row" wx:if="{{needTableNo}}">
+      <text class="label">桌号</text>
+      <input class="input" placeholder="请输入桌号" value="{{tableNo}}" bindinput="onTableInput" />
+    </view>
+    <view class="input-row">
+      <text class="label">备注</text>
+      <input class="input" placeholder="口味偏好、忌口等" value="{{remark}}" bindinput="onRemarkInput" />
+    </view>
+  </view>
+
+  <view style="height: 160rpx"></view>
+
+  <view class="footer-bar">
+    <view class="footer-total">
+      合计 <text class="price">{{cart.total_amount}}</text>
+    </view>
+    <view class="submit-btn {{submitting ? 'disabled' : ''}}" bindtap="onSubmit">提交订单并支付</view>
+  </view>
+</view>

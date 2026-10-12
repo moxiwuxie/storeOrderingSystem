@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>门店点单 · 商家后台</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f6f8; color: #333; font-size: 14px; }
+  button { cursor: pointer; font-family: inherit; }
+  input, select, textarea { font-family: inherit; font-size: 14px; padding: 8px 10px; border: 1px solid #dcdfe6; border-radius: 6px; outline: none; width: 100%; }
+  input:focus, select:focus, textarea:focus { border-color: #ff6b35; }
+  .hidden { display: none !important; }
+
+  /* 登录 */
+  #login { display: flex; align-items: center; justify-content: center; height: 100vh; }
+  .login-box { background: #fff; padding: 40px; border-radius: 12px; width: 340px; box-shadow: 0 8px 30px rgba(0,0,0,.08); }
+  .login-box h1 { font-size: 20px; margin-bottom: 24px; text-align: center; }
+  .login-box .field { margin-bottom: 16px; }
+  .btn { background: #ff6b35; color: #fff; border: none; border-radius: 6px; padding: 10px 18px; }
+  .btn:hover { background: #e85f2c; }
+  .btn.block { width: 100%; padding: 12px; }
+  .btn.ghost { background: #fff; color: #ff6b35; border: 1px solid #ff6b35; }
+  .btn.gray { background: #fff; color: #666; border: 1px solid #dcdfe6; }
+  .btn.sm { padding: 6px 12px; font-size: 13px; }
+  .btn.danger { background: #fff; color: #f5222d; border: 1px solid #f5222d; }
+
+  /* 布局 */
+  header { background: #fff; padding: 0 24px; height: 60px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 1px 4px rgba(0,0,0,.06); position: sticky; top: 0; z-index: 10; }
+  header .logo { font-weight: 700; color: #ff6b35; font-size: 17px; }
+  nav { display: flex; gap: 8px; }
+  nav a { padding: 8px 16px; border-radius: 6px; color: #666; text-decoration: none; }
+  nav a.active { background: #fff1ea; color: #ff6b35; font-weight: 600; }
+  main { padding: 20px 24px 60px; max-width: 1200px; margin: 0 auto; }
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .toolbar .spacer { flex: 1; }
+  .panel { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+  th { color: #888; font-weight: 500; font-size: 13px; background: #fafafa; }
+  .tag { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; }
+  .tag.on { background: #e8f7e8; color: #52c41a; }
+  .tag.off { background: #f2f2f2; color: #999; }
+  .tag.s0 { background: #fff1ea; color: #ff6b35; }
+  .tag.s1 { background: #e8f2ff; color: #1890ff; }
+  .tag.s2 { background: #e8f7e8; color: #52c41a; }
+  .tag.s3 { background: #f2f2f2; color: #999; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+  .stat-card { background: #fff; border-radius: 10px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,.05); }
+  .stat-card .label { color: #888; font-size: 13px; }
+  .stat-card .value { font-size: 26px; font-weight: 700; margin-top: 8px; color: #ff6b35; }
+  .toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.8); color: #fff; padding: 10px 20px; border-radius: 6px; z-index: 100; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: flex; align-items: center; justify-content: center; z-index: 50; }
+  .modal-box { background: #fff; border-radius: 10px; padding: 24px; width: 620px; max-height: 86vh; overflow: auto; }
+  .modal-box h3 { margin-bottom: 18px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .field label { display: block; font-size: 13px; color: #666; margin-bottom: 6px; }
+  .spec-row { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 8px; margin-bottom: 8px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 22px; }
+  .empty { text-align: center; color: #999; padding: 40px 0; }
+</style>
+</head>
+<body>
+
+<!-- 登录页 -->
+<div id="login">
+  <div class="login-box">
+    <h1>商家后台登录</h1>
+    <div class="field"><input id="username" placeholder="用户名" value="admin" /></div>
+    <div class="field"><input id="password" type="password" placeholder="密码" value="admin123" /></div>
+    <button class="btn block" onclick="doLogin()">登 录</button>
+    <p style="margin-top:14px;color:#999;font-size:12px;text-align:center">默认账号 admin / admin123，请部署后尽快修改</p>
+  </div>
+</div>
+
+<!-- 主界面 -->
+<div id="app" class="hidden">
+  <header>
+    <div class="logo">门店点单 · 商家后台</div>
+    <nav>
+      <a href="#" data-tab="stats" class="active" onclick="switchTab('stats')">数据统计</a>
+      <a href="#" data-tab="products" onclick="switchTab('products')">商品管理</a>
+      <a href="#" data-tab="orders" onclick="switchTab('orders')">订单管理</a>
+    </nav>
+    <button class="btn gray sm" onclick="logout()">退出</button>
+  </header>
+  <main>
+    <section id="tab-stats"></section>
+    <section id="tab-products" class="hidden"></section>
+    <section id="tab-orders" class="hidden"></section>
+  </main>
+</div>
+
+<div id="modal-root"></div>
+
+<script>
+const API = location.origin;
+let token = localStorage.getItem('admin_token') || '';
+
+function toast(msg) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2000);
+}
+
+async function api(path, options = {}) {
+  const res = await fetch(API + path, {
+    method: options.method || 'GET',
+    headers: Object.assign(
+      { 'Content-Type': 'application/json' },
+      token ? { Authorization: 'Bearer ' + token } : {}
+    ),
+    body: options.body ? JSON.stringify(options.body) : undefined
+  });
+  if (res.status === 401) { logout(); throw new Error('登录已过期'); }
+  const data = await res.json();
+  if (data.code !== 0) { toast(data.msg || '操作失败'); throw new Error(data.msg); }
+  return data.data;
+}
+
+function money(v) { return Number(v || 0).toFixed(2); }
+
+// ==================== 登录 ====================
+async function doLogin() {
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const res = await fetch(API + '/api/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  if (data.code !== 0) return toast(data.msg || '登录失败');
+  token = data.data.token;
+  localStorage.setItem('admin_token', token);
+  showApp();
+}
+
+function logout() {
+  token = '';
+  localStorage.removeItem('admin_token');
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('login').classList.remove('hidden');
+}
+
+function showApp() {
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  switchTab('stats');
+}
+
+// ==================== Tab ====================
+function switchTab(tab) {
+  document.querySelectorAll('nav a').forEach((a) => a.classList.toggle('active', a.dataset.tab === tab));
+  ['stats', 'products', 'orders'].forEach((t) => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+  });
+  if (tab === 'stats') loadStats();
+  if (tab === 'products') loadProducts();
+  if (tab === 'orders') loadOrders();
+}
+
+// ==================== 统计 ====================
+async function loadStats() {
+  const d = await api('/api/admin/stats');
+  const statusCount = d.status_count || {};
+  document.getElementById('tab-stats').innerHTML = `
+    <div class="stats">
+      <div class="stat-card"><div class="label">今日订单数</div><div class="value">${d.today_order_count}</div></div>
+      <div class="stat-card"><div class="label">今日营收</div><div class="value">¥${money(d.today_revenue)}</div></div>
+      <div class="stat-card"><div class="label">累计营收</div><div class="value">¥${money(d.total_revenue)}</div></div>
+      <div class="stat-card"><div class="label">待支付订单</div><div class="value">${statusCount['待支付'] || 0}</div></div>
+    </div>
+    <div class="panel">
+      <h3 style="margin-bottom:14px">订单状态分布</h3>
+      <table><thead><tr><th>状态</th><th>订单数</th></tr></thead><tbody>
+        ${['待支付','已支付','已完成','已取消'].map((s) => `<tr><td>${s}</td><td>${statusCount[s] || 0}</td></tr>`).join('')}
+      </tbody></table>
+    </div>
+    <div class="panel" style="margin-top:20px">
+      <h3 style="margin-bottom:14px">热销商品 TOP5</h3>
+      ${d.hot_products.length ? `<table><thead><tr><th>商品</th><th>销量</th></tr></thead><tbody>
+        ${d.hot_products.map((p) => `<tr><td>${p.name}</td><td>${p.quantity}</td></tr>`).join('')}
+      </tbody></table>` : '<div class="empty">暂无数据</div>'}
+    </div>`;
+}
+
+// ==================== 商品 ====================
+let categories = [];
+
+async function loadProducts() {
+  categories = await api('/api/admin/categories');
+  const keyword = document.getElementById('prod-keyword') ? document.getElementById('prod-keyword').value : '';
+  const products = await api('/api/admin/products' + (keyword ? '?keyword=' + encodeURIComponent(keyword) : ''));
+  const catName = (id) => (categories.find((c) => c.id === id) || {}).name || '-';
+
+  document.getElementById('tab-products').innerHTML = `
+    <div class="toolbar">
+      <input id="prod-keyword" placeholder="搜索商品名称" style="width:220px" value="${keyword}"
+             onkeydown="if(event.key==='Enter')loadProducts()" />
+      <button class="btn ghost sm" onclick="loadProducts()">搜索</button>
+      <div class="spacer"></div>
+      <button class="btn gray sm" onclick="openCategoryModal()">管理分类</button>
+      <button class="btn sm" onclick="openProductModal()">＋ 新增商品</button>
+    </div>
+    <div class="panel">
+      ${products.length ? `<table>
+        <thead><tr><th>商品</th><th>分类</th><th>价格</th><th>库存</th><th>规格</th><th>状态</th><th style="width:230px">操作</th></tr></thead>
+        <tbody>${products.map((p) => `
+          <tr>
+            <td><strong>${p.name}</strong><div style="color:#999;font-size:12px">${p.description || ''}</div></td>
+            <td>${catName(p.category_id)}</td>
+            <td>¥${money(p.price)}</td>
+            <td>${p.specs.length ? p.specs.map((s) => `${s.name}:${s.stock}`).join(' / ') : p.stock}</td>
+            <td>${p.specs.length ? p.specs.map((s) => s.name).join('、') : '<span style="color:#999">无</span>'}</td>
+            <td><span class="tag ${p.status ? 'on' : 'off'}">${p.status ? '上架' : '下架'}</span></td>
+            <td>
+              <button class="btn gray sm" onclick='openProductModal(${JSON.stringify(p)})'>编辑</button>
+              <button class="btn ghost sm" onclick="toggleStatus(${p.id}, ${!p.status})">${p.status ? '下架' : '上架'}</button>
+              <button class="btn danger sm" onclick="removeProduct(${p.id})">删除</button>
+            </td>
+          </tr>`).join('')}</tbody>
+      </table>` : '<div class="empty">暂无商品，点击右上角新增</div>'}
+    </div>`;
+}
+
+async function toggleStatus(id, status) {
+  await api(`/api/admin/products/${id}/status?status=${status}`, { method: 'PUT' });
+  toast('操作成功');
+  loadProducts();
+}
+
+async function removeProduct(id) {
+  if (!confirm('确定删除该商品吗？')) return;
+  await api('/api/admin/products/' + id, { method: 'DELETE' });
+  toast('已删除');
+  loadProducts();
+}
+
+function openCategoryModal() {
+  const rows = categories.map((c) => `
+    <tr>
+      <td><input value="${c.name}" onchange="updateCategory(${c.id}, this.value, ${c.sort}, ${c.status})" /></td>
+      <td>${c.product_count} 个商品</td>
+      <td><button class="btn danger sm" onclick="removeCategory(${c.id})">删除</button></td>
+    </tr>`).join('');
+  showModal(`
+    <h3>分类管理</h3>
+    <table><thead><tr><th>分类名称</th><th>商品数</th><th style="width:80px">操作</th></tr></thead><tbody>${rows || '<tr><td colspan="3" class="empty">暂无分类</td></tr>'}</tbody></table>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <input id="new-cat-name" placeholder="新分类名称" />
+      <button class="btn sm" style="white-space:nowrap" onclick="createCategory()">新增</button>
+    </div>
+    <div class="modal-actions"><button class="btn gray" onclick="closeModal()">关闭</button></div>`);
+}
+
+async function createCategory() {
+  const name = document.getElementById('new-cat-name').value.trim();
+  if (!name) return toast('请输入分类名称');
+  await api('/api/admin/categories', { method: 'POST', body: { name, sort: 0, status: true } });
+  toast('已新增');
+  closeModal();
+  loadProducts();
+}
+
+async function updateCategory(id, name, sort, status) {
+  await api('/api/admin/categories/' + id, { method: 'PUT', body: { name, sort, status } });
+  toast('已保存');
+}
+
+async function removeCategory(id) {
+  if (!confirm('确定删除该分类吗？')) return;
+  await api('/api/admin/categories/' + id, { method: 'DELETE' });
+  toast('已删除');
+  closeModal();
+  loadProducts();
+}
+
+function openProductModal(product) {
+  const p = product || { category_id: categories.length ? categories[0].id : 0, name: '', description: '', image: '', price: 0, stock: 0, unit: '份', sort: 0, status: true, specs: [] };
+  showModal(`
+    <h3>${product ? '编辑商品' : '新增商品'}</h3>
+    <div class="form-grid">
+      <div class="field"><label>商品名称</label><input id="f-name" value="${p.name || ''}" /></div>
+      <div class="field"><label>所属分类</label>
+        <select id="f-category">${categories.map((c) => `<option value="${c.id}" ${c.id === p.category_id ? 'selected' : ''}>${c.name}</option>`).join('')}</select>
+      </div>
+      <div class="field full"><label>商品简介</label><input id="f-desc" value="${p.description || ''}" /></div>
+      <div class="field full"><label>图片地址（可选）</label><input id="f-image" value="${p.image || ''}" placeholder="https://..." /></div>
+      <div class="field"><label>售价（无规格时生效）</label><input id="f-price" type="number" step="0.01" value="${p.price || 0}" /></div>
+      <div class="field"><label>库存（无规格时生效）</label><input id="f-stock" type="number" value="${p.stock || 0}" /></div>
+      <div class="field"><label>单位</label><input id="f-unit" value="${p.unit || '份'}" /></div>
+      <div class="field"><label>排序（越小越靠前）</label><input id="f-sort" type="number" value="${p.sort || 0}" /></div>
+      <div class="field full"><label>状态</label>
+        <select id="f-status"><option value="true" ${p.status ? 'selected' : ''}>上架</option><option value="false" ${!p.status ? 'selected' : ''}>下架</option></select>
+      </div>
+    </div>
+    <h4 style="margin:18px 0 10px">多规格（留空则使用上面的售价/库存）</h4>
+    <div id="spec-list"></div>
+    <button class="btn gray sm" onclick="addSpecRow()">＋ 添加规格</button>
+    <div class="modal-actions">
+      <button class="btn gray" onclick="closeModal()">取消</button>
+      <button class="btn" onclick="saveProduct(${product ? product.id : 'null'})">保存</button>
+    </div>`);
+  (p.specs || []).forEach((s) => addSpecRow(s));
+}
+
+function addSpecRow(spec) {
+  const s = spec || { id: null, name: '', price: 0, stock: 0, sort: 0 };
+  const div = document.createElement('div');
+  div.className = 'spec-row';
+  div.innerHTML = `
+    <input placeholder="规格名，如 大杯" value="${s.name}" data-k="name" />
+    <input type="number" step="0.01" placeholder="价格" value="${s.price}" data-k="price" />
+    <input type="number" placeholder="库存" value="${s.stock}" data-k="stock" />
+    <button class="btn danger sm" onclick="this.parentNode.remove()">删除</button>`;
+  div.dataset.id = s.id || '';
+  document.getElementById('spec-list').appendChild(div);
+}
+
+async function saveProduct(id) {
+  const specs = [...document.querySelectorAll('#spec-list .spec-row')].map((row) => ({
+    id: row.dataset.id ? Number(row.dataset.id) : null,
+    name: row.querySelector('[data-k="name"]').value.trim(),
+    price: Number(row.querySelector('[data-k="price"]').value || 0),
+    stock: Number(row.querySelector('[data-k="stock"]').value || 0),
+    sort: 0
+  })).filter((s) => s.name);
+
+  const body = {
+    category_id: Number(document.getElementById('f-category').value),
+    name: document.getElementById('f-name').value.trim(),
+    description: document.getElementById('f-desc').value.trim(),
+    image: document.getElementById('f-image').value.trim(),
+    price: Number(document.getElementById('f-price').value || 0),
+    stock: Number(document.getElementById('f-stock').value || 0),
+    unit: document.getElementById('f-unit').value.trim() || '份',
+    sort: Number(document.getElementById('f-sort').value || 0),
+    status: document.getElementById('f-status').value === 'true',
+    specs
+  };
+  if (!body.name) return toast('请输入商品名称');
+  if (!body.category_id) return toast('请先创建分类');
+
+  if (id) await api('/api/admin/products/' + id, { method: 'PUT', body });
+  else await api('/api/admin/products', { method: 'POST', body });
+  toast('保存成功');
+  closeModal();
+  loadProducts();
+}
+
+// ==================== 订单 ====================
+const STATUS_OPTIONS = [
+  { v: '', t: '全部' }, { v: 0, t: '待支付' }, { v: 1, t: '已支付' }, { v: 2, t: '已完成' }, { v: 3, t: '已取消' }
+];
+
+async function loadOrders() {
+  const current = window.__orderStatus ?? '';
+  const orders = await api('/api/admin/orders' + (current === '' ? '' : '?status=' + current));
+  document.getElementById('tab-orders').innerHTML = `
+    <div class="toolbar">
+      <div style="width:160px">
+        <select onchange="window.__orderStatus=this.value; loadOrders()">
+          ${STATUS_OPTIONS.map((o) => `<option value="${o.v}" ${String(o.v) === String(current) ? 'selected' : ''}>${o.t}</option>`).join('')}
+        </select>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn ghost sm" onclick="loadOrders()">刷新</button>
+    </div>
+    <div class="panel">
+      ${orders.length ? `<table>
+        <thead><tr><th>订单号</th><th>商品</th><th>金额</th><th>下单时间</th><th>状态</th><th style="width:200px">操作</th></tr></thead>
+        <tbody>${orders.map((o) => `
+          <tr>
+            <td style="font-size:12px">${o.order_no}</td>
+            <td style="font-size:12px">${o.items.map((i) => `${i.product_name}${i.spec_name ? '(' + i.spec_name + ')' : ''} ×${i.quantity}`).join('<br/>')}</td>
+            <td class="price">¥${money(o.pay_amount)}</td>
+            <td style="font-size:12px">${(o.created_at || '').replace('T', ' ').slice(0, 16)}</td>
+            <td><span class="tag s${o.status}">${o.status_text}</span></td>
+            <td>
+              ${o.status === 1 ? `<button class="btn ghost sm" onclick="setOrderStatus('${o.order_no}', 2)">完成订单</button>` : ''}
+              ${o.status === 0 ? `<button class="btn gray sm" onclick="setOrderStatus('${o.order_no}', 3)">关闭订单</button>` : ''}
+            </td>
+          </tr>`).join('')}</tbody>
+      </table>` : '<div class="empty">暂无订单</div>'}
+    </div>`;
+}
+
+async function setOrderStatus(orderNo, status) {
+  await api(`/api/admin/orders/${orderNo}/status`, { method: 'PUT', body: { status } });
+  toast('已更新');
+  loadOrders();
+}
+
+// ==================== Modal ====================
+function showModal(html) {
+  document.getElementById('modal-root').innerHTML = `<div class="modal"><div class="modal-box">${html}</div></div>`;
+}
+function closeModal() { document.getElementById('modal-root').innerHTML = ''; }
+
+// 启动
+if (token) showApp();
+</script>
+</body>
+</html>

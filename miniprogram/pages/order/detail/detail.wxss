@@ -1,0 +1,95 @@
+.status-banner {
+  padding: 48rpx 32rpx;
+  color: #fff;
+  background: #999;
+}
+
+.status-banner.status-0 { background: #ff6b35; }
+.status-banner.status-1 { background: #1890ff; }
+.status-banner.status-2 { background: #52c41a; }
+.status-banner.status-3 { background: #999999; }
+
+.status-text {
+  font-size: 38rpx;
+  font-weight: 700;
+}
+
+.status-tip {
+  font-size: 24rpx;
+  margin-top: 12rpx;
+  opacity: 0.9;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 0;
+  font-size: 28rpx;
+}
+
+.row-name {
+  flex: 1;
+}
+
+.row-spec {
+  font-size: 22rpx;
+  color: #999;
+}
+
+.row-qty {
+  width: 90rpx;
+  text-align: center;
+  color: #999;
+}
+
+.row-price {
+  width: 130rpx;
+  text-align: right;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f5f5f5;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 18rpx 0;
+  font-size: 26rpx;
+}
+
+.label {
+  color: #999;
+}
+
+.footer-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 120rpx;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 24rpx;
+  padding: 0 24rpx;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.btn-outline,
+.btn-primary {
+  padding: 0 40rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+}
+
+.btn-outline {
+  border: 2rpx solid #ddd;
+  color: #666;
+}

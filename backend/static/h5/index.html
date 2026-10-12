@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<meta name="format-detection" content="telephone=no" />
+<meta name="theme-color" content="#ff6b35" />
+<title>门店点单</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+    background: #eceff1; color: #333; font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* 手机外框：桌面浏览器居中显示，手机上占满 */
+  #phone {
+    max-width: 480px; margin: 0 auto; min-height: 100vh; background: #f5f5f5;
+    position: relative; display: flex; flex-direction: column;
+    box-shadow: 0 0 40px rgba(0,0,0,.12); overflow: hidden;
+  }
+  @media (max-width: 480px) { #phone { box-shadow: none; } }
+
+  /* 顶部标题栏 */
+  .navbar {
+    height: 48px; background: #ff6b35; color: #fff; display: flex; align-items: center;
+    padding: 0 12px; position: sticky; top: 0; z-index: 30; flex-shrink: 0;
+  }
+  .navbar .back { width: 32px; font-size: 20px; cursor: pointer; }
+  .navbar .title { flex: 1; text-align: center; font-size: 16px; font-weight: 600; }
+  .navbar .right { width: 32px; }
+  .navbar .title.left { text-align: left; padding-left: 4px; }
+
+  .content { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; position: relative; }
+  .page { padding-bottom: 12px; }
+
+  /* 底部 tabbar */
+  .tabbar {
+    height: 54px; background: #fff; display: flex; border-top: 1px solid #eee;
+    position: sticky; bottom: 0; z-index: 30; flex-shrink: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tabbar .tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #999; font-size: 11px; gap: 2px; cursor: pointer; }
+  .tabbar .tab .ico { font-size: 19px; line-height: 1; }
+  .tabbar .tab.on { color: #ff6b35; font-weight: 600; }
+  .tabbar .tab .badge {
+    position: absolute; margin-left: 22px; margin-top: -20px; background: #ff3b30; color: #fff;
+    font-size: 10px; min-width: 16px; height: 16px; line-height: 16px; text-align: center;
+    border-radius: 8px; padding: 0 4px;
+  }
+
+  /* 点单页 */
+  .menu { display: flex; height: 100%; }
+  .cats { width: 92px; background: #f0f0f0; flex-shrink: 0; }
+  .cat { padding: 16px 6px; text-align: center; font-size: 13px; color: #666; cursor: pointer; }
+  .cat.on { background: #fff; color: #ff6b35; font-weight: 600; box-shadow: inset 3px 0 0 #ff6b35; }
+  .goods { flex: 1; background: #fff; }
+  .cat-block-title { padding: 12px 14px 4px; font-size: 12px; color: #999; }
+  .goods-item { display: flex; padding: 12px 14px; position: relative; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+  .thumb { width: 72px; height: 72px; border-radius: 8px; background: #f2f2f2; flex-shrink: 0; object-fit: cover; }
+  .thumb.ph { display: flex; align-items: center; justify-content: center; font-size: 28px; }
+  .gi { flex: 1; margin-left: 10px; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
+  .gi-name { font-size: 15px; font-weight: 600; }
+  .gi-desc { font-size: 11px; color: #999; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .gi-bottom { display: flex; align-items: baseline; gap: 8px; }
+  .price { color: #ff3b30; font-weight: 600; }
+  .price::before { content: '¥'; font-size: 11px; }
+  .price.big { font-size: 17px; }
+  .stock { font-size: 11px; color: #999; }
+  .soldout { color: #bbb; font-size: 11px; }
+  .add {
+    position: absolute; right: 14px; bottom: 12px; width: 26px; height: 26px; border-radius: 50%;
+    background: #ff6b35; color: #fff; font-size: 18px; line-height: 24px; text-align: center; border: none; cursor: pointer;
+  }
+  .add:disabled { background: #ddd; }
+
+  /* 购物车条 */
+  .cartbar {
+    position: sticky; bottom: 0; height: 52px; background: #fff; display: flex; align-items: center;
+    padding: 0 12px; box-shadow: 0 -2px 10px rgba(0,0,0,.06); z-index: 20; flex-shrink: 0;
+  }
+  .cartbar .left { flex: 1; display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .cartbar .ico { width: 38px; height: 38px; border-radius: 50%; background: #ddd; display: flex;
+    align-items: center; justify-content: center; font-size: 18px; }
+  .cartbar .ico.on { background: #ff6b35; }
+  .cartbar .total { font-size: 14px; }
+  .cartbar .cnt { font-size: 11px; color: #999; }
+  .cartbar .go {
+    width: 108px; height: 38px; line-height: 38px; text-align: center; border-radius: 20px;
+    background: #ff6b35; color: #fff; font-size: 14px; border: none; cursor: pointer;
+  }
+  .cartbar .go:disabled { background: #ccc; }
+
+  /* 通用卡片 / 列表 */
+  .card { background: #fff; border-radius: 10px; padding: 12px; margin: 10px; }
+  .row { display: flex; align-items: center; padding: 9px 0; border-bottom: 1px solid #f5f5f5; }
+  .row:last-child { border-bottom: none; }
+  .row .grow { flex: 1; min-width: 0; }
+  .row .name { font-size: 14px; }
+  .row .sub { font-size: 11px; color: #999; margin-top: 2px; }
+  .row .qty { color: #999; font-size: 12px; margin: 0 10px; }
+  .row .amt { width: 64px; text-align: right; font-size: 13px; }
+  .total-row { display: flex; justify-content: space-between; padding-top: 10px; border-top: 1px solid #f5f5f5; font-size: 14px; }
+
+  .stepper { display: flex; align-items: center; gap: 8px; }
+  .stepper button {
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid #eee; background: #fff;
+    font-size: 15px; line-height: 1; color: #333; cursor: pointer;
+  }
+  .stepper button:disabled { color: #ddd; }
+  .stepper .n { min-width: 22px; text-align: center; font-size: 14px; }
+  .del { color: #bbb; font-size: 11px; cursor: pointer; }
+
+  .field { display: flex; align-items: center; padding: 11px 0; border-bottom: 1px solid #f5f5f5; }
+  .field:last-child { border-bottom: none; }
+  .field label { width: 56px; color: #666; font-size: 13px; flex-shrink: 0; }
+  .field input { flex: 1; border: none; outline: none; font-size: 14px; background: transparent; }
+
+  .footer {
+    position: sticky; bottom: 0; background: #fff; padding: 10px 12px; display: flex;
+    align-items: center; justify-content: space-between; gap: 10px;
+    box-shadow: 0 -2px 10px rgba(0,0,0,.06); z-index: 20; flex-shrink: 0;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+  }
+  .btn { border: none; border-radius: 22px; height: 42px; padding: 0 22px; font-size: 15px; cursor: pointer; }
+  .btn.primary { background: #ff6b35; color: #fff; flex: 1; }
+  .btn.primary:disabled { background: #ffc3ab; }
+  .btn.outline { background: #fff; color: #666; border: 1px solid #ddd; }
+
+  /* 订单 */
+  .tabs { display: flex; background: #fff; position: sticky; top: 0; z-index: 10; overflow-x: auto; }
+  .tabs .t { flex: 1; text-align: center; padding: 12px 0; font-size: 13px; color: #666;
+    border-bottom: 2px solid transparent; white-space: nowrap; cursor: pointer; }
+  .tabs .t.on { color: #ff6b35; font-weight: 600; border-bottom-color: #ff6b35; }
+  .order-head { display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid #f5f5f5; }
+  .order-no { font-size: 11px; color: #999; }
+  .st { font-size: 13px; font-weight: 600; }
+  .st-0 { color: #ff6b35; } .st-1 { color: #1890ff; } .st-2 { color: #52c41a; } .st-3 { color: #999; }
+  .order-foot { display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px solid #f5f5f5;
+    font-size: 12px; color: #999; }
+
+  .banner { padding: 22px 16px; color: #fff; }
+  .banner.status-0 { background: #ff6b35; } .banner.status-1 { background: #1890ff; }
+  .banner.status-2 { background: #52c41a; } .banner.status-3 { background: #999; }
+  .banner .t1 { font-size: 19px; font-weight: 700; }
+  .banner .t2 { font-size: 12px; opacity: .9; margin-top: 5px; }
+
+  .info { display: flex; justify-content: space-between; padding: 9px 0; font-size: 13px; }
+  .info .k { color: #999; }
+
+  /* 个人中心 */
+  .profile { background: linear-gradient(135deg,#ff8a5c,#ff6b35); color: #fff; padding: 26px 16px;
+    display: flex; align-items: center; gap: 12px; }
+  .avatar { width: 56px; height: 56px; border-radius: 50%; background: rgba(255,255,255,.3);
+    display: flex; align-items: center; justify-content: center; font-size: 26px; object-fit: cover; }
+  .quick { display: flex; }
+  .quick .q { flex: 1; text-align: center; cursor: pointer; }
+  .quick .q .n { font-size: 17px; font-weight: 700; color: #ff6b35; }
+  .quick .q .l { font-size: 11px; color: #666; margin-top: 3px; }
+  .menu-item { display: flex; justify-content: space-between; padding: 13px 0; font-size: 14px;
+    border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+  .menu-item:last-child { border-bottom: none; }
+  .menu-item .arrow { color: #ccc; }
+
+  /* 弹层 */
+  .mask { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 40; }
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 14px 14px 0 0;
+    padding: 16px; z-index: 41; max-width: 480px; margin: 0 auto; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+  .sheet h3 { margin: 0 0 4px; font-size: 16px; }
+  .sheet .hint { font-size: 11px; color: #999; margin-bottom: 12px; }
+  .spec { display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid #eee;
+    border-radius: 8px; margin-bottom: 8px; font-size: 14px; cursor: pointer; }
+  .spec.on { border-color: #ff6b35; background: #fff5f0; color: #ff6b35; }
+  .spec.off { color: #ccc; cursor: not-allowed; }
+  .sheet-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; gap: 12px; }
+  .pay-opt { display: flex; align-items: center; gap: 10px; padding: 14px 12px; border: 1px solid #eee;
+    border-radius: 8px; margin-bottom: 10px; cursor: pointer; }
+  .pay-opt .pi { font-size: 20px; }
+  .pay-opt .grow { flex: 1; }
+  .pay-opt .tag { font-size: 10px; color: #ff6b35; border: 1px solid #ff6b35; border-radius: 4px; padding: 0 4px; }
+
+  .empty { text-align: center; color: #999; padding: 70px 20px; font-size: 13px; }
+  .empty .big { font-size: 40px; margin-bottom: 12px; }
+
+  .toast { position: fixed; top: 20%; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.8);
+    color: #fff; padding: 9px 18px; border-radius: 6px; z-index: 99; font-size: 13px; max-width: 80%; }
+  .loading { text-align: center; color: #999; padding: 60px 0; font-size: 13px; }
+  .spin { display: inline-block; width: 18px; height: 18px; border: 2px solid #ffd5c2;
+    border-top-color: #ff6b35; border-radius: 50%; animation: sp .7s linear infinite; vertical-align: -3px; margin-right: 6px; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+
+  .result { text-align: center; padding: 60px 20px; }
+  .result .ic { font-size: 62px; }
+  .result .t { font-size: 19px; font-weight: 700; margin-top: 14px; }
+  .result .s { color: #999; font-size: 13px; margin-top: 8px; }
+  .result .acts { display: flex; gap: 12px; justify-content: center; margin-top: 34px; }
+
+  mark.env { background: #fff1ea; color: #ff6b35; font-size: 11px; padding: 2px 8px; border-radius: 10px; }
+</style>
+</head>
+<body>
+<div id="phone">
+  <div class="navbar" id="navbar"></div>
+  <div class="content" id="content"></div>
+  <div class="tabbar" id="tabbar"></div>
+</div>
+<div id="layer"></div>
+
+<script>
+/* ============================================================
+ * 门店扫码点单 · H5 版（浏览器 / 支付宝内打开）
+ * 与微信小程序共用同一套后端 REST 接口
+ * ============================================================ */
+const API = location.origin;
+const LS_TOKEN = 'h5_token';
+const LS_DEVICE = 'h5_device_id';
+const LS_PHONE = 'h5_phone';
+
+const S = {
+  token: localStorage.getItem(LS_TOKEN) || '',
+  user: null,
+  route: location.hash || '#/menu',
+  categories: [],
+  cart: { items: [], total_quantity: 0, total_amount: 0 },
+  orders: [],
+  orderFilter: '',
+  order: null,
+  categoryId: 0,
+  loading: true,
+  payMode: 'mock',
+  inAlipay: /AlipayClient/i.test(navigator.userAgent),
+  inWechat: /MicroMessenger/i.test(navigator.userAgent)
+};
+
+/* ---------------- 基础工具 ---------------- */
+function deviceId() {
+  let id = localStorage.getItem(LS_DEVICE);
+  if (!id) {
+    id = 'h5_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+    localStorage.setItem(LS_DEVICE, id);
+  }
+  return id;
+}
+function money(v) { return Number(v || 0).toFixed(2); }
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function fmtTime(s) {
+  if (!s) return '';
+  const d = new Date(String(s).replace(/-/g, '/').replace('T', ' '));
+  if (isNaN(d)) return String(s).slice(0, 16);
+  const p = (n) => (n < 10 ? '0' + n : n);
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function toast(msg) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2000);
+}
+const ORDER_STATUS = { 0: '待支付', 1: '已支付', 2: '已完成', 3: '已取消' };
+const STATUS_TIP = {
+  0: '请尽快完成支付', 1: '已支付，正在为您备餐',
+  2: '订单已完成，欢迎再次光临', 3: '订单已取消'
+};
+
+/* ---------------- 请求封装 ---------------- */
+async function api(path, options = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (S.token) headers.Authorization = 'Bearer ' + S.token;
+  let res;
+  try {
+    res = await fetch(API + path, {
+      method: options.method || 'GET',
+      headers,
+      body: options.body ? JSON.stringify(options.body) : undefined
+    });
+  } catch (e) {
+    toast('网络异常，请检查网络后重试');
+    throw e;
+  }
+  let data = {};
+  try { data = await res.json(); } catch (e) { /* 空响应 */ }
+
+  if (res.status === 401) {
+    clearSession();
+    await login();
+    throw new Error('登录已刷新，请重试');
+  }
+  if (data.code !== 0) {
+    toast(data.msg || '操作失败');
+    throw new Error(data.msg || 'fail');
+  }
+  return data.data;
+}
+
+function clearSession() {
+  S.token = '';
+  S.user = null;
+  localStorage.removeItem(LS_TOKEN);
+}
+
+/* ---------------- 登录 ----------------
+ * 免注册：设备标识识别顾客；若已绑定手机号或支付宝授权码则优先使用，
+ * 便于顾客换设备时仍能看到自己的历史订单。
+ */
+async function login(extra = {}) {
+  const phone = localStorage.getItem(LS_PHONE) || undefined;
+  const data = await api('/api/auth/h5', {
+    method: 'POST',
+    body: Object.assign({ device_id: deviceId(), phone }, extra)
+  });
+  S.token = data.token;
+  S.user = data;
+  localStorage.setItem(LS_TOKEN, data.token);
+  return data;
+}
+
+/* ---------------- 路由 ---------------- */
+const ROUTES = {
+  '#/menu': { title: '点单', tab: 'menu', render: viewMenu },
+  '#/cart': { title: '购物车', tab: 'cart', render: viewCart },
+  '#/orders': { title: '我的订单', tab: 'orders', render: viewOrders },
+  '#/me': { title: '我的', tab: 'me', render: viewMe }
+};
+
+function go(hash) {
+  if (location.hash === hash) render();
+  else location.hash = hash;
+}
+window.addEventListener('hashchange', render);
+
+function render() {
+  S.route = location.hash || '#/menu';
+  const base = (S.route.split('?')[0] || '#/menu');
+
+  // 子页面（订单详情 / 确认订单 / 支付结果）
+  if (base.startsWith('#/order/')) return renderOrderDetail(base.slice(8));
+  if (base === '#/checkout') return renderCheckout();
+  if (base === '#/result') return renderResult();
+
+  const route = ROUTES[base] || ROUTES['#/menu'];
+  document.getElementById('navbar').innerHTML =
+    `<div class="back"></div><div class="title">${route.title}</div><div class="right"></div>`;
+  renderTabbar(route.tab);
+  route.render();
+}
+
+function renderTabbar(active) {
+  const n = S.cart.total_quantity;
+  const tabs = [
+    { k: 'menu', h: '#/menu', i: '🍽', t: '点单' },
+    { k: 'cart', h: '#/cart', i: '🛒', t: '购物车', badge: n },
+    { k: 'orders', h: '#/orders', i: '📋', t: '订单' },
+    { k: 'me', h: '#/me', i: '👤', t: '我的' }
+  ];
+  document.getElementById('tabbar').innerHTML = tabs.map((t) => `
+    <div class="tab ${t.k === active ? 'on' : ''}" onclick="go('${t.h}')">
+      <span class="ico">${t.i}</span>${t.t}
+      ${t.badge ? `<span class="badge">${t.badge}</span>` : ''}
+    </div>`).join('');
+}
+
+function setNav(title, backHash) {
+  document.getElementById('navbar').innerHTML =
+    `<div class="back" onclick="go('${backHash}')">‹</div><div class="title">${title}</div><div class="right"></div>`;
+}
+function hideTabbar() { document.getElementById('tabbar').innerHTML = ''; }
+function content(html) { document.getElementById('content').innerHTML = html; }
+function loading() { content('<div class="loading"><span class="spin"></span>加载中…</div>'); }
+
+/* ============================================================
+ * 点单页
+ * ============================================================ */
+async function loadMenu() {
+  const cats = await api('/api/products/categories');
+  S.categories = (cats || []).filter((c) => c.products.length);
+  if (!S.categories.some((c) => c.id === S.categoryId)) {
+    S.categoryId = S.categories.length ? S.categories[0].id : 0;
+  }
+}
+async function loadCart() {
+  S.cart = await api('/api/cart');
+}
+
+async function viewMenu() {
+  if (!S.categories.length) {
+    loading();
+    try { await loadMenu(); } catch (e) { return; }
+  }
+  // 已登录时同步最新购物车，未登录（启动瞬间）先展示菜单
+  if (S.token) {
+    try { await loadCart(); } catch (e) { /* ignore */ }
+  }
+  S.loading = false;
+  drawMenu();
+}
+
+function drawMenu() {
+  const cats = S.categories;
+  if (!cats.length) {
+    content('<div class="empty"><div class="big">🍽</div>暂无可售商品</div>');
+    return;
+  }
+  const cur = cats.find((c) => c.id === S.categoryId) || cats[0];
+  const items = cur.products.map((p) => `
+    <div class="goods-item" onclick="onTapProduct(${p.id})">
+      ${p.image
+        ? `<img class="thumb" src="${esc(p.image)}" alt="" />`
+        : '<div class="thumb ph">🍽</div>'}
+      <div class="gi">
+        <div>
+          <div class="gi-name">${esc(p.name)}</div>
+          <div class="gi-desc">${esc(p.description || '')}</div>
+        </div>
+        <div class="gi-bottom">
+          <span class="price big">${money(p.price)}</span>
+          ${p.stock > 0 ? `<span class="stock">库存 ${p.stock}</span>` : '<span class="soldout">已售罄</span>'}
+        </div>
+      </div>
+      <button class="add" ${p.stock <= 0 ? 'disabled' : ''}>＋</button>
+    </div>`).join('');
+
+  content(`
+    <div class="menu">
+      <div class="cats">
+        ${cats.map((c) => `<div class="cat ${c.id === cur.id ? 'on' : ''}" onclick="pickCat(${c.id})">${esc(c.name)}</div>`).join('')}
+      </div>
+      <div class="goods">
+        <div class="cat-block-title">${esc(cur.name)}</div>
+        ${items}
+        <div style="height:12px"></div>
+      </div>
+    </div>
+    <div class="cartbar">
+      <div class="left" onclick="go('#/cart')">
+        <div class="ico ${S.cart.total_quantity ? 'on' : ''}">🛒</div>
+        <div>
+          <div class="total">${S.cart.total_quantity ? `合计 <span class="price">${money(S.cart.total_amount)}</span>` : '购物车是空的'}</div>
+          ${S.cart.total_quantity ? `<div class="cnt">共 ${S.cart.total_quantity} 件</div>` : ''}
+        </div>
+      </div>
+      <button class="go" ${S.cart.total_quantity ? '' : 'disabled'}
+        onclick="${S.cart.total_quantity ? "go('#/checkout')" : ''}">去结算</button>
+    </div>`);
+}
+
+function pickCat(id) { S.categoryId = id; drawMenu(); }
+
+function onTapProduct(id) {
+  const p = S.categories.flatMap((c) => c.products).find((x) => x.id === id);
+  if (!p || p.stock <= 0) return toast('该商品已售罄');
+  if (p.specs && p.specs.length) {
+    const first = p.specs.find((s) => s.stock > 0) || p.specs[0];
+    S.specProduct = p;
+    S.specId = first.id;
+    S.specQty = 1;
+    drawSpecSheet();
+  } else {
+    addToCart(p.id, null, 1);
+  }
+}
+
+function drawSpecSheet() {
+  const p = S.specProduct;
+  document.getElementById('layer').innerHTML = `
+    <div class="mask" onclick="closeLayer()"></div>
+    <div class="sheet">
+      <h3>${esc(p.name)}</h3>
+      <div class="hint">请选择规格</div>
+      ${p.specs.map((s) => `
+        <div class="spec ${s.id === S.specId ? 'on' : ''} ${s.stock <= 0 ? 'off' : ''}"
+             onclick="${s.stock > 0 ? `pickSpec(${s.id})` : ''}">
+          <span>${esc(s.name)}</span>
+          <span>¥${money(s.price)}${s.stock <= 0 ? ' · 售罄' : ''}</span>
+        </div>`).join('')}
+      <div class="sheet-foot">
+        <div class="stepper">
+          <button onclick="specQty(-1)">－</button>
+          <span class="n">${S.specQty}</span>
+          <button onclick="specQty(1)">＋</button>
+        </div>
+        <button class="btn primary" onclick="confirmSpec()">加入购物车</button>
+      </div>
+    </div>`;
+}
+function pickSpec(id) { S.specId = id; drawSpecSheet(); }
+function specQty(d) { S.specQty = Math.max(1, S.specQty + d); drawSpecSheet(); }
+function closeLayer() { document.getElementById('layer').innerHTML = ''; }
+function confirmSpec() {
+  const p = S.specProduct;
+  closeLayer();
+  addToCart(p.id, S.specId, S.specQty);
+}
+
+async function addToCart(productId, specId, quantity) {
+  try {
+    S.cart = await api('/api/cart', {
+      method: 'POST',
+      body: { product_id: productId, spec_id: specId, quantity }
+    });
+    toast('已加入购物车');
+    if (location.hash === '#/menu' || !location.hash) drawMenu();
+    renderTabbar('menu');
+  } catch (e) { /* 错误已提示 */ }
+}
+
+/* ============================================================
+ * 购物车
+ * ============================================================ */
+async function viewCart() {
+  loading();
+  try { await loadCart(); } catch (e) { return; }
+  drawCart();
+  renderTabbar('cart');
+}
+
+function drawCart() {
+  const c = S.cart;
+  if (!c.items.length) {
+    content(`<div class="empty"><div class="big">🛒</div>购物车还是空的
+      <div style="margin-top:20px"><button class="btn primary" style="padding:0 40px" onclick="go('#/menu')">去点单</button></div></div>`);
+    return;
+  }
+  content(`
+    <div class="page">
+      <div class="card">
+        ${c.items.map((it) => `
+          <div class="row">
+            <div class="grow">
+              <div class="name">${esc(it.name)}</div>
+              ${it.spec_name ? `<div class="sub">${esc(it.spec_name)}</div>` : ''}
+              <div style="margin-top:6px;display:flex;align-items:center;justify-content:space-between">
+                <span class="price">${money(it.price)}</span>
+                <span class="stepper">
+                  <button onclick="changeQty(${it.id},-1)">－</button>
+                  <span class="n">${it.quantity}</span>
+                  <button onclick="changeQty(${it.id},1)" ${it.quantity >= it.stock ? 'disabled' : ''}>＋</button>
+                </span>
+              </div>
+            </div>
+            <div style="text-align:right;margin-left:12px">
+              <div class="del" onclick="removeItem(${it.id})">删除</div>
+              <div class="amt" style="margin-top:12px">¥${money(it.subtotal)}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div style="text-align:center;padding:10px 0">
+        <span style="color:#999;font-size:12px" onclick="clearCart()">清空购物车</span>
+      </div>
+    </div>
+    <div class="footer">
+      <div class="total">合计 <span class="price big">${money(c.total_amount)}</span></div>
+      <button class="btn primary" onclick="go('#/checkout')">去结算（${c.total_quantity}）</button>
+    </div>`);
+}
+
+async function changeQty(id, d) {
+  const it = S.cart.items.find((i) => i.id === id);
+  if (!it) return;
+  const q = it.quantity + d;
+  if (q <= 0) return removeItem(id);
+  if (q > it.stock) return toast('已达库存上限');
+  try {
+    S.cart = await api('/api/cart/' + id, { method: 'PUT', body: { quantity: q } });
+    drawCart();
+    renderTabbar('cart');
+  } catch (e) { /* ignore */ }
+}
+
+function removeItem(id) {
+  confirmDialog('确定要移除该商品吗？', async () => {
+    try {
+      S.cart = await api('/api/cart/' + id, { method: 'DELETE' });
+      drawCart();
+      renderTabbar('cart');
+    } catch (e) { /* ignore */ }
+  });
+}
+
+function clearCart() {
+  confirmDialog('确定要清空购物车吗？', async () => {
+    try {
+      S.cart = await api('/api/cart', { method: 'DELETE' });
+      drawCart();
+      renderTabbar('cart');
+    } catch (e) { /* ignore */ }
+  });
+}
+
+function confirmDialog(text, onOk) {
+  document.getElementById('layer').innerHTML = `
+    <div class="mask" onclick="closeLayer()"></div>
+    <div class="sheet" style="text-align:center">
+      <div style="padding:14px 0;font-size:15px">${esc(text)}</div>
+      <div style="display:flex;gap:12px;margin-top:10px">
+        <button class="btn outline" style="flex:1" onclick="closeLayer()">取消</button>
+        <button class="btn primary" style="flex:1" id="dlg-ok">确定</button>
+      </div>
+    </div>`;
+  document.getElementById('dlg-ok').onclick = () => { closeLayer(); onOk(); };
+}
+
+/* ============================================================
+ * 确认订单
+ * ============================================================ */
+async function renderCheckout() {
+  setNav('确认订单', '#/cart');
+  hideTabbar();
+  loading();
+  try { await loadCart(); } catch (e) { return; }
+  if (!S.cart.items.length) {
+    content('<div class="empty">购物车为空</div>');
+    return;
+  }
+  S.remark = S.remark || '';
+  S.tableNo = S.tableNo || '';
+  content(`
+    <div class="page">
+      <div class="card">
+        <div style="font-size:12px;color:#999;margin-bottom:8px">订单商品</div>
+        ${S.cart.items.map((it) => `
+          <div class="row">
+            <div class="grow">
+              <div class="name">${esc(it.name)}${it.spec_name ? `<span class="sub">（${esc(it.spec_name)}）</span>` : ''}</div>
+            </div>
+            <span class="qty">x${it.quantity}</span>
+            <span class="amt">¥${money(it.subtotal)}</span>
+          </div>`).join('')}
+        <div class="total-row"><span>合计</span><span class="price big">${money(S.cart.total_amount)}</span></div>
+      </div>
+      <div class="card">
+        <div class="field">
+          <label>桌号</label>
+          <input id="f-table" placeholder="选填，堂食可填写桌号" value="${esc(S.tableNo)}" />
+        </div>
+        <div class="field">
+          <label>备注</label>
+          <input id="f-remark" placeholder="口味偏好、忌口等" value="${esc(S.remark)}" />
+        </div>
+      </div>
+    </div>
+    <div class="footer">
+      <div class="total">合计 <span class="price big">${money(S.cart.total_amount)}</span></div>
+      <button class="btn primary" id="submit-order" onclick="submitOrder()">提交订单</button>
+    </div>`);
+}
+
+async function submitOrder() {
+  const btn = document.getElementById('submit-order');
+  if (btn) btn.disabled = true;
+  S.tableNo = document.getElementById('f-table').value.trim();
+  S.remark = document.getElementById('f-remark').value.trim();
+  try {
+    const order = await api('/api/orders', {
+      method: 'POST',
+      body: { remark: S.remark, table_no: S.tableNo }
+    });
+    S.lastOrder = order.order_no;
+    S.cart = { items: [], total_quantity: 0, total_amount: 0 };
+    drawPaySheet(order.order_no, order.pay_amount);
+  } catch (e) {
+    if (btn) btn.disabled = false;
+  }
+}
+
+/* ---------------- 支付 ---------------- */
+function drawPaySheet(orderNo, amount) {
+  // 支付宝内打开默认支付宝；微信内默认微信；普通浏览器默认支付宝（H5 场景）
+  const prefer = S.inWechat ? 'wechat' : 'alipay';
+  const opt = (k, icon, name, note) => `
+    <div class="pay-opt" onclick="doPay('${orderNo}','${k}')">
+      <span class="pi">${icon}</span>
+      <span class="grow">
+        <div>${name}</div>
+        <div class="sub" style="color:#999;font-size:11px">${note}</div>
+      </span>
+      ${k === prefer ? '<span class="tag">推荐</span>' : ''}
+    </div>`;
+  document.getElementById('layer').innerHTML = `
+    <div class="mask" onclick="closeLayer()"></div>
+    <div class="sheet">
+      <h3>选择支付方式</h3>
+      <div class="hint">订单号 ${esc(orderNo)} · 应付 ¥${money(amount)}</div>
+      ${opt('alipay', '🅰️', '支付宝支付', S.inAlipay ? '当前在支付宝内，直接拉起收银台' : '跳转支付宝 H5 收银台')}
+      ${opt('wechat', '💬', '微信支付', '需在微信内打开或跳转微信完成付款')}
+      <div style="margin-top:6px">
+        <button class="btn outline" style="width:100%" onclick="closeLayer();go('#/orders')">稍后支付</button>
+      </div>
+    </div>`;
+}
+
+async function doPay(orderNo, payType) {
+  closeLayer();
+  try {
+    const res = await api('/api/payment/prepay', {
+      method: 'POST',
+      body: { order_no: orderNo, pay_type: payType, source: 'h5' }
+    });
+    if (res.mock || res.paid) {
+      go('#/result?order_no=' + orderNo + '&ok=1');
+      return;
+    }
+    const p = res.pay_params || {};
+    if (p.mode === 'h5_redirect' && p.h5_url) {
+      location.href = p.h5_url;
+      return;
+    }
+    if (p.mode === 'h5_form' && p.form_html) {
+      const div = document.createElement('div');
+      div.innerHTML = p.form_html;
+      document.body.appendChild(div);
+      const form = div.querySelector('form');
+      if (form) form.submit();
+      return;
+    }
+    toast('支付参数异常，请稍后在订单页重试');
+    go('#/orders');
+  } catch (e) { /* 错误已提示 */ }
+}
+
+/* ============================================================
+ * 支付结果
+ * ============================================================ */
+async function renderResult() {
+  const q = parseQuery(S.route);
+  setNav('支付结果', '#/orders');
+  hideTabbar();
+  let ok = q.ok === '1';
+  let order = null;
+  try {
+    order = await api('/api/orders/' + q.order_no);
+    ok = order.status === 1 || order.status === 2;
+  } catch (e) { /* ignore */ }
+  content(`
+    <div class="result">
+      <div class="ic">${ok ? '✅' : '⏳'}</div>
+      <div class="t">${ok ? '支付成功' : '支付未完成'}</div>
+      ${order ? `<div class="s">订单号 ${esc(order.order_no)}</div>
+                 <div class="s">支付金额 ¥${money(order.pay_amount)}</div>` : ''}
+      <div class="acts">
+        <button class="btn outline" onclick="go('#/menu')">继续点单</button>
+        <button class="btn primary" style="flex:0 0 auto" onclick="go('#/orders')">查看订单</button>
+      </div>
+    </div>`);
+}
+
+/* ============================================================
+ * 订单列表
+ * ============================================================ */
+const FILTERS = [
+  { t: '全部', v: '' }, { t: '待支付', v: 0 }, { t: '已支付', v: 1 },
+  { t: '已完成', v: 2 }, { t: '已取消', v: 3 }
+];
+
+async function viewOrders() {
+  if (S.orderFilter === undefined) S.orderFilter = '';
+  loading();
+  try { await loadOrders(); } catch (e) { return; }
+  drawOrders();
+  renderTabbar('orders');
+}
+
+async function loadOrders() {
+  const q = S.orderFilter === '' ? '' : '?status=' + S.orderFilter;
+  S.orders = await api('/api/orders' + q);
+}
+
+function drawOrders() {
+  const list = S.orders || [];
+  content(`
+    <div class="tabs">
+      ${FILTERS.map((f) => `<div class="t ${String(f.v) === String(S.orderFilter) ? 'on' : ''}"
+        onclick="setFilter('${f.v}')">${f.t}</div>`).join('')}
+    </div>
+    ${list.length ? list.map((o) => `
+      <div class="card" onclick="go('#/order/${o.order_no}')" style="cursor:pointer">
+        <div class="order-head">
+          <span class="order-no">${esc(o.order_no)}</span>
+          <span class="st st-${o.status}">${o.status_text}</span>
+        </div>
+        <div style="padding:8px 0">
+          ${o.items.map((g) => `<div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0">
+            <span>${esc(g.product_name)}${g.spec_name ? `<span class="sub" style="color:#999;font-size:11px">（${esc(g.spec_name)}）</span>` : ''}</span>
+            <span style="color:#999">x${g.quantity}</span>
+          </div>`).join('')}
+        </div>
+        <div class="order-foot">
+          <span>${fmtTime(o.created_at)}</span>
+          <span>合计 <span class="price">${money(o.pay_amount)}</span></span>
+        </div>
+      </div>`).join('')
+      : '<div class="empty"><div class="big">📋</div>暂无订单</div>'}
+    <div style="height:12px"></div>`);
+}
+
+async function setFilter(v) {
+  S.orderFilter = v === '' ? '' : Number(v);
+  loading();
+  try { await loadOrders(); } catch (e) { return; }
+  drawOrders();
+}
+
+/* ============================================================
+ * 订单详情
+ * ============================================================ */
+async function renderOrderDetail(orderNo) {
+  setNav('订单详情', '#/orders');
+  hideTabbar();
+  loading();
+  let o;
+  try { o = await api('/api/orders/' + orderNo); } catch (e) {
+    content('<div class="empty">订单不存在</div>');
+    return;
+  }
+  S.order = o;
+  content(`
+    <div class="banner status-${o.status}">
+      <div class="t1">${o.status_text}</div>
+      <div class="t2">${STATUS_TIP[o.status] || ''}</div>
+    </div>
+    <div class="page">
+      <div class="card">
+        ${o.items.map((g) => `
+          <div class="row">
+            <div class="grow">
+              <div class="name">${esc(g.product_name)}${g.spec_name ? `<span class="sub">（${esc(g.spec_name)}）</span>` : ''}</div>
+            </div>
+            <span class="qty">x${g.quantity}</span>
+            <span class="amt">¥${money(g.subtotal)}</span>
+          </div>`).join('')}
+        <div class="total-row"><span>合计</span><span class="price big">${money(o.pay_amount)}</span></div>
+      </div>
+      <div class="card">
+        <div class="info"><span class="k">订单编号</span><span>${esc(o.order_no)}</span></div>
+        <div class="info"><span class="k">下单时间</span><span>${fmtTime(o.created_at)}</span></div>
+        ${o.pay_time ? `<div class="info"><span class="k">支付时间</span><span>${fmtTime(o.pay_time)}</span></div>` : ''}
+        ${o.pay_type ? `<div class="info"><span class="k">支付方式</span><span>${o.pay_type === 'wechat' ? '微信支付' : '支付宝支付'}</span></div>` : ''}
+        ${o.table_no ? `<div class="info"><span class="k">桌号</span><span>${esc(o.table_no)}</span></div>` : ''}
+        ${o.remark ? `<div class="info"><span class="k">备注</span><span>${esc(o.remark)}</span></div>` : ''}
+      </div>
+    </div>
+    ${o.status === 0 ? `
+      <div class="footer">
+        <button class="btn outline" onclick="cancelOrder('${o.order_no}')">取消订单</button>
+        <button class="btn primary" style="flex:0 0 62%" onclick="drawPaySheet('${o.order_no}', ${o.pay_amount})">立即支付 ¥${money(o.pay_amount)}</button>
+      </div>` : ''}`);
+}
+
+function cancelOrder(orderNo) {
+  confirmDialog('确定要取消该订单吗？', async () => {
+    try {
+      await api(`/api/orders/${orderNo}/cancel`, { method: 'POST' });
+      toast('已取消');
+      await renderOrderDetail(orderNo);
+    } catch (e) { /* ignore */ }
+  });
+}
+
+/* ============================================================
+ * 我的
+ * ============================================================ */
+async function viewMe() {
+  renderTabbar('me');
+  const u = S.user || {};
+  let count = 0;
+  try { count = (await api('/api/orders')).length; } catch (e) { /* ignore */ }
+  const phone = localStorage.getItem(LS_PHONE) || '';
+  content(`
+    <div class="profile">
+      ${u.avatar ? `<img class="avatar" src="${esc(u.avatar)}" alt="" />` : '<div class="avatar">👤</div>'}
+      <div>
+        <div style="font-size:17px;font-weight:700">${esc(u.nickname || '顾客')}</div>
+        <div style="font-size:11px;opacity:.9;margin-top:5px">
+          ${phone ? '手机号 ' + esc(phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')) : '免注册顾客'}
+          ${S.inAlipay ? ' · 支付宝内打开' : ''}
+        </div>
+      </div>
+    </div>
+    <div class="card quick">
+      <div class="q" onclick="go('#/orders')"><div class="n">${count}</div><div class="l">全部订单</div></div>
+      <div class="q" onclick="setFilterFromMe(0)"><div class="n">›</div><div class="l">待支付</div></div>
+      <div class="q" onclick="setFilterFromMe(1)"><div class="n">›</div><div class="l">已支付</div></div>
+      <div class="q" onclick="setFilterFromMe(2)"><div class="n">›</div><div class="l">已完成</div></div>
+    </div>
+    <div class="card">
+      <div class="menu-item" onclick="go('#/orders')">我的订单 <span class="arrow">›</span></div>
+      <div class="menu-item" onclick="bindPhone()">${phone ? '修改手机号' : '绑定手机号（换设备可找回订单）'} <span class="arrow">›</span></div>
+      <div class="menu-item" onclick="loginWithAlipay()">支付宝授权登录 <span class="arrow">›</span></div>
+      <div class="menu-item" onclick="doLogout()">退出登录 <span class="arrow">›</span></div>
+    </div>
+    <div style="text-align:center;color:#bbb;font-size:11px;padding:16px 0">
+      当前支付模式：${S.payMode === 'mock' ? '模拟支付（本地联调）' : '真实支付'}
+    </div>`);
+}
+
+function setFilterFromMe(v) {
+  S.orderFilter = v;
+  go('#/orders');
+}
+
+function bindPhone() {
+  const cur = localStorage.getItem(LS_PHONE) || '';
+  document.getElementById('layer').innerHTML = `
+    <div class="mask" onclick="closeLayer()"></div>
+    <div class="sheet">
+      <h3>绑定手机号</h3>
+      <div class="hint">仅用于换设备时找回订单，不做短信验证</div>
+      <div class="field"><label>手机号</label><input id="f-phone" type="tel" maxlength="11" value="${esc(cur)}" placeholder="请输入手机号" /></div>
+      <div style="margin-top:14px"><button class="btn primary" style="width:100%" onclick="savePhone()">保存</button></div>
+    </div>`;
+}
+async function savePhone() {
+  const v = document.getElementById('f-phone').value.trim();
+  if (v && !/^1\d{10}$/.test(v)) return toast('手机号格式不正确');
+  closeLayer();
+  if (!v) { localStorage.removeItem(LS_PHONE); toast('已解绑'); return viewMe(); }
+  localStorage.setItem(LS_PHONE, v);
+  try { await login(); toast('绑定成功'); } catch (e) { /* ignore */ }
+  viewMe();
+}
+
+async function loginWithAlipay() {
+  // 真实环境：跳转支付宝授权页拿到 auth_code 后回调本页，再调用 /api/auth/h5 换取身份
+  // 本地/未配置时由后端 mock 生成，仅用于打通流程
+  const authCode = 'h5_alipay_' + deviceId();
+  try {
+    await login({ auth_code: authCode });
+    toast('支付宝授权登录成功');
+    viewMe();
+  } catch (e) { /* ignore */ }
+}
+
+function doLogout() {
+  confirmDialog('退出后将重新以本设备身份登录，确定吗？', () => {
+    clearSession();
+    login().then(() => { toast('已重新登录'); go('#/menu'); });
+  });
+}
+
+/* ---------------- 工具 ---------------- */
+function parseQuery(hash) {
+  const i = hash.indexOf('?');
+  const out = {};
+  if (i < 0) return out;
+  hash.slice(i + 1).split('&').forEach((kv) => {
+    const [k, v] = kv.split('=');
+    if (k) out[decodeURIComponent(k)] = decodeURIComponent(v || '');
+  });
+  return out;
+}
+
+/* ---------------- 启动 ---------------- */
+(async function boot() {
+  render();
+  try {
+    const h = await api('/api/health');
+    S.payMode = h.pay_mode || 'mock';
+  } catch (e) { /* ignore */ }
+  if (!S.token) {
+    try { await login(); } catch (e) { return; }
+  } else {
+    try {
+      S.user = await api('/api/auth/profile');
+    } catch (e) {
+      try { await login(); } catch (e2) { return; }
+    }
+  }
+  // 登录完成后再拉购物车，保证角标正确
+  try {
+    S.cart = await api('/api/cart');
+  } catch (e) { /* ignore */ }
+  render();
+})();
+</script>
+</body>
+</html>

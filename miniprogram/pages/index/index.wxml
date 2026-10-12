@@ -1,0 +1,89 @@
+<view class="container">
+  <view class="menu">
+    <!-- 左侧分类 -->
+    <scroll-view class="cats" scroll-y>
+      <view
+        wx:for="{{categories}}"
+        wx:key="id"
+        class="cat-item {{currentId === item.id ? 'active' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onSelectCategory"
+      >
+        {{item.name}}
+      </view>
+    </scroll-view>
+
+    <!-- 右侧商品 -->
+    <scroll-view class="goods" scroll-y scroll-into-view="{{scrollIntoId}}" scroll-with-animation>
+      <view wx:for="{{categories}}" wx:key="id" id="cat-{{item.id}}" class="cat-block">
+        <view class="cat-title">{{item.name}}</view>
+        <view
+          class="goods-item"
+          wx:for="{{item.products}}"
+          wx:for-item="p"
+          wx:key="id"
+          data-product="{{p}}"
+          bindtap="onTapProduct"
+        >
+          <image class="thumb" src="{{p.image}}" mode="aspectFill" wx:if="{{p.image}}"></image>
+          <view class="thumb thumb-placeholder" wx:else>🍽</view>
+          <view class="goods-info">
+            <view class="goods-name">{{p.name}}</view>
+            <view class="goods-desc">{{p.description}}</view>
+            <view class="goods-bottom">
+              <text class="price">{{p.price}}</text>
+              <text class="stock" wx:if="{{p.stock <= 0}}">已售罄</text>
+              <text class="stock" wx:else>库存 {{p.stock}}</text>
+            </view>
+          </view>
+          <view class="add-btn">＋</view>
+        </view>
+      </view>
+      <view class="empty" wx:if="{{!loading && categories.length === 0}}">暂无可售商品</view>
+      <view style="height: 140rpx"></view>
+    </scroll-view>
+  </view>
+
+  <!-- 底部购物车条 -->
+  <view class="cart-bar">
+    <view class="cart-left" bindtap="goCart">
+      <view class="cart-icon {{cart.total_quantity ? 'on' : ''}}">🛒</view>
+      <view class="cart-info">
+        <view class="cart-amount" wx:if="{{cart.total_quantity}}">
+          合计 <text class="price">{{cart.total_amount}}</text>
+        </view>
+        <view class="cart-amount" wx:else>购物车是空的</view>
+        <view class="cart-count" wx:if="{{cart.total_quantity}}">共 {{cart.total_quantity}} 件</view>
+      </view>
+    </view>
+    <view class="cart-btn {{cart.total_quantity ? '' : 'disabled'}}" bindtap="goCheckout">去结算</view>
+  </view>
+
+  <!-- 规格弹窗 -->
+  <view class="mask" wx:if="{{showSpec}}" bindtap="onCloseSpec"></view>
+  <view class="spec-popup" wx:if="{{showSpec}}">
+    <view class="spec-title">{{current.name}}</view>
+    <view class="spec-sub">请选择规格</view>
+    <view class="spec-list">
+      <view
+        wx:for="{{current.specs}}"
+        wx:key="id"
+        class="spec-item {{selectedSpecId === item.id ? 'active' : ''}} {{item.stock <= 0 ? 'disabled' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onSelectSpec"
+      >
+        <text>{{item.name}}</text>
+        <text class="spec-price">¥{{item.price}}</text>
+        <text class="spec-stock" wx:if="{{item.stock <= 0}}">售罄</text>
+      </view>
+    </view>
+    <view class="spec-footer">
+      <view class="qty">
+        <view class="qty-btn" data-delta="-1" bindtap="onSpecQtyChange">－</view>
+        <view class="qty-num">{{specQty}}</view>
+        <view class="qty-btn" data-delta="1" bindtap="onSpecQtyChange">＋</view>
+      </view>
+      <view class="btn-primary spec-confirm" bindtap="onConfirmSpec">加入购物车</view>
+    </view>
+  </view>
+</view>

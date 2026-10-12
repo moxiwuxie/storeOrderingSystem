@@ -1,0 +1,94 @@
+.card-title {
+  font-size: 26rpx;
+  color: #999;
+  margin-bottom: 16rpx;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 0;
+  font-size: 28rpx;
+}
+
+.row-name {
+  flex: 1;
+}
+
+.row-spec {
+  font-size: 22rpx;
+  color: #999;
+}
+
+.row-qty {
+  width: 90rpx;
+  text-align: center;
+  color: #999;
+}
+
+.row-price {
+  width: 130rpx;
+  text-align: right;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 20rpx;
+  border-top: 1rpx solid #f5f5f5;
+  font-size: 28rpx;
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+
+.input-row:last-child {
+  border-bottom: none;
+}
+
+.label {
+  width: 120rpx;
+  color: #666;
+}
+
+.input {
+  flex: 1;
+  font-size: 28rpx;
+}
+
+.footer-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 120rpx;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24rpx;
+  box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.footer-total {
+  font-size: 30rpx;
+}
+
+.submit-btn {
+  width: 340rpx;
+  height: 84rpx;
+  line-height: 84rpx;
+  text-align: center;
+  border-radius: 44rpx;
+  background: #ff6b35;
+  color: #fff;
+  font-size: 30rpx;
+}
+
+.submit-btn.disabled {
+  background: #ffc3ab;
+}

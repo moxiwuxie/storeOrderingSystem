@@ -1,0 +1,38 @@
+<view class="container">
+  <view class="tabs">
+    <view
+      wx:for="{{tabs}}"
+      wx:key="label"
+      class="tab {{activeIndex === index ? 'active' : ''}}"
+      data-index="{{index}}"
+      bindtap="onTabChange"
+    >
+      {{item.label}}
+    </view>
+  </view>
+
+  <block wx:if="{{orders.length}}">
+    <view class="order card" wx:for="{{orders}}" wx:key="id" data-no="{{item.order_no}}" bindtap="goDetail">
+      <view class="order-head">
+        <text class="order-no">{{item.order_no}}</text>
+        <text class="order-status status-{{item.status}}">{{item.status_text}}</text>
+      </view>
+      <view class="order-body">
+        <view class="order-item" wx:for="{{item.items}}" wx:for-item="g" wx:key="product_id">
+          <text class="gi-name">{{g.product_name}}<text class="gi-spec" wx:if="{{g.spec_name}}"> ({{g.spec_name}})</text></text>
+          <text class="gi-qty">x{{g.quantity}}</text>
+        </view>
+      </view>
+      <view class="order-foot">
+        <text class="time">{{item.created_text}}</text>
+        <text class="amount">合计 <text class="price">{{item.pay_amount}}</text></text>
+      </view>
+    </view>
+    <view style="height: 40rpx"></view>
+  </block>
+
+  <view class="empty-wrap" wx:elif="{{!loading}}">
+    <view class="empty">暂无订单</view>
+    <view class="btn-primary go-menu" bindtap="goMenu">去点单</view>
+  </view>
+</view>

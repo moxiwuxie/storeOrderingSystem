@@ -1,0 +1,41 @@
+.container {
+  text-align: center;
+  padding-top: 140rpx;
+}
+
+.icon {
+  font-size: 120rpx;
+}
+
+.title {
+  font-size: 38rpx;
+  font-weight: 700;
+  margin-top: 24rpx;
+}
+
+.sub {
+  font-size: 26rpx;
+  color: #999;
+  margin-top: 16rpx;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 30rpx;
+  margin-top: 80rpx;
+}
+
+.btn-outline,
+.btn-primary {
+  width: 240rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  border-radius: 40rpx;
+  font-size: 30rpx;
+}
+
+.btn-outline {
+  border: 2rpx solid #ff6b35;
+  color: #ff6b35;
+}

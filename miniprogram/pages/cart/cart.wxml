@@ -1,0 +1,37 @@
+<view class="container">
+  <block wx:if="{{cart.items.length}}">
+    <view class="card">
+      <view class="row" wx:for="{{cart.items}}" wx:key="id">
+        <view class="row-main">
+          <view class="row-name">{{item.name}}</view>
+          <view class="row-spec" wx:if="{{item.spec_name}}">{{item.spec_name}}</view>
+          <view class="row-bottom">
+            <text class="price">{{item.price}}</text>
+            <view class="qty">
+              <view class="qty-btn" data-id="{{item.id}}" data-delta="-1" bindtap="changeQty">－</view>
+              <view class="qty-num">{{item.quantity}}</view>
+              <view class="qty-btn" data-id="{{item.id}}" data-delta="1" bindtap="changeQty">＋</view>
+            </view>
+          </view>
+        </view>
+        <view class="row-right">
+          <view class="del" data-id="{{item.id}}" bindtap="remove">删除</view>
+          <view class="subtotal">小计 ¥{{item.subtotal}}</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="clear" bindtap="clearCart">清空购物车</view>
+    <view style="height: 140rpx"></view>
+
+    <view class="cart-bar">
+      <view class="total">合计 <text class="price">{{cart.total_amount}}</text></view>
+      <view class="cart-btn" bindtap="goCheckout">去结算（{{cart.total_quantity}}）</view>
+    </view>
+  </block>
+
+  <view class="empty-wrap" wx:else>
+    <view class="empty">购物车还是空的</view>
+    <view class="btn-primary go-menu" bindtap="goMenu">去点单</view>
+  </view>
+</view>

@@ -1,0 +1,38 @@
+<view class="container" wx:if="{{order}}">
+  <view class="status-banner status-{{order.status}}">
+    <view class="status-text">{{order.status_text}}</view>
+    <view class="status-tip" wx:if="{{order.status === 0}}">请尽快完成支付</view>
+    <view class="status-tip" wx:elif="{{order.status === 1}}">已支付，正在为您备餐</view>
+    <view class="status-tip" wx:elif="{{order.status === 2}}">订单已完成，欢迎再次光临</view>
+    <view class="status-tip" wx:else>订单已取消</view>
+  </view>
+
+  <view class="card">
+    <view class="row" wx:for="{{order.items}}" wx:key="product_id">
+      <view class="row-name">
+        {{item.product_name}}<text class="row-spec" wx:if="{{item.spec_name}}">（{{item.spec_name}}）</text>
+      </view>
+      <view class="row-qty">x{{item.quantity}}</view>
+      <view class="row-price">¥{{item.subtotal}}</view>
+    </view>
+    <view class="total-row">
+      <text>合计</text>
+      <text class="price">{{order.pay_amount}}</text>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="info-row"><text class="label">订单编号</text><text>{{order.order_no}}</text></view>
+    <view class="info-row"><text class="label">下单时间</text><text>{{created_text}}</text></view>
+    <view class="info-row" wx:if="{{order.pay_time}}"><text class="label">支付时间</text><text>{{pay_text}}</text></view>
+    <view class="info-row" wx:if="{{order.pay_type}}"><text class="label">支付方式</text><text>{{order.pay_type === 'wechat' ? '微信支付' : '支付宝支付'}}</text></view>
+    <view class="info-row" wx:if="{{order.table_no}}"><text class="label">桌号</text><text>{{order.table_no}}</text></view>
+    <view class="info-row" wx:if="{{order.remark}}"><text class="label">备注</text><text>{{order.remark}}</text></view>
+  </view>
+
+  <view style="height: 160rpx"></view>
+  <view class="footer-bar" wx:if="{{order.status === 0}}">
+    <view class="btn-outline" bindtap="onCancel">取消订单</view>
+    <view class="btn-primary" bindtap="onPay">立即支付 ¥{{order.pay_amount}}</view>
+  </view>
+</view>
